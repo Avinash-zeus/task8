@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Excel-like Canvas Grid</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        #scrollContainer {
+            width: 80%;
+            height: 80%;
+            overflow: scroll;
+        }
+
+        #excelCanvas {
+            background-color: #eeeeee;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="scrollContainer">
+        <canvas id="excelCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('excelCanvas');
+        const ctx = canvas.getContext('2d');
+        const scrollContainer = document.getElementById('scrollContainer');
+
+        // Constants
+        const cellWidth = 100;
+        const cellHeight = 25;
+        const totalCols = 500;
+        const totalRows = 100000;
+
+        const virtualWidth = totalCols * cellWidth;
+        const virtualHeight = totalRows * cellHeight;
+
+        // Dummy spacer to enable scrolling
+        const spacer = document.createElement('div');
+        spacer.style.width = virtualWidth + 'px';
+        spacer.style.height = virtualHeight + 'px';
+        scrollContainer.appendChild(spacer);
+
+        function resizeCanvas() {
+            canvas.width = scrollContainer.clientWidth;  //visible-width
+            canvas.height = scrollContainer.clientHeight;
+
+            renderGrid(); // Re-render after resize
+        }
+
+        function renderGrid() {
+            const scrollX = scrollContainer.scrollLeft; // left towards right kitna scroll kra ha, starting me ye zero rhega
+            const scrollY = scrollContainer.scrollTop; // top se kitna scroll kra h neeche ke taraf / simply means top-left pixel of scroll-container
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // sbse pehle pura visible page part mita diya 
+            ctx.font = '12px sans-serif';
+
+            const startCol = Math.floor(scrollX / cellWidth);//pehla col ka number
+            const endCol = startCol + Math.ceil(canvas.width / cellWidth);//last col ka number
+
+            const startRow = Math.floor(scrollY / cellHeight);
+            const endRow = startRow + Math.ceil(canvas.height / cellHeight);
+
+            for (let row = startRow; row <= endRow; row++) {
+                for (let col = startCol; col <= endCol; col++) {
+                    const x = col * cellWidth - scrollX;
+                    const y = row * cellHeight - scrollY;
+
+                    ctx.strokeStyle = '#ccc';
+                    ctx.strokeRect(x, y, cellWidth, cellHeight);
+
+                    ctx.fillStyle = '#000';
+                    ctx.fillText(`${row},${col}`, x + 4, y + 16);
+                }
+            }
+        }
+
+        // Debounced scroll rendering
+        let needsRender = false;
+        scrollContainer.addEventListener('scroll', () => {
+            if (!needsRender) {
+                needsRender = true;
+                requestAnimationFrame(() => { // optimise performace
+                    renderGrid();
+                    needsRender = false;
+                });
+            }
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Initial setup
+        resizeCanvas();
+    </script>
+</body>
+
+</html>

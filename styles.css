@@ -1,0 +1,21 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+#container {
+    width: 80%;
+    height: 80%;
+    overflow: scroll;
+}
+
+.myCanvas {
+    background-color: rgba(236, 236, 236, 0.548);
+}

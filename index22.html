@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Excel-like Canvas Grid</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        #scrollContainer {
+            width: 80%;
+            height: 80%;
+            overflow: scroll;
+        }
+
+        #excelCanvas {
+            background-color: #eeeeee;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="scrollContainer">
+        <canvas id="excelCanvas"></canvas>
+    </div>
+
+    <script>
+        class Cell {
+            constructor(row, col) {
+                this.row = row;
+                this.col = col;
+            }
+
+            draw(ctx, x, y, width, height, scrollX, scrollY) {
+                ctx.strokeStyle = '#ccc';
+                ctx.strokeRect(x, y, width, height);
+
+                ctx.fillStyle = '#000';
+                ctx.fillText(`${this.row.index},${this.col.index}`, x + 4, y + 16);
+            }
+        }
+
+        class Column {
+            constructor(index, width = 100) {
+                this.index = index;
+                this.width = width;
+            }
+        }
+
+        class Row {
+            constructor(index, height = 25) {
+                this.index = index;
+                this.height = height;
+            }
+        }
+
+        class Grid {
+            constructor(canvas, scrollContainer, totalRows = 100000, totalCols = 500) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.scrollContainer = scrollContainer;
+
+                this.cellWidth = 100;
+                this.cellHeight = 25;
+
+                this.columns = Array.from({ length: totalCols }, (_, i) => new Column(i, this.cellWidth));
+                this.rows = Array.from({ length: totalRows }, (_, i) => new Row(i, this.cellHeight));
+
+                this.virtualWidth = totalCols * this.cellWidth;
+                this.virtualHeight = totalRows * this.cellHeight;
+
+                this.setupScrollSpacer();
+                this.attachEvents();
+                this.resizeCanvas();
+            }
+
+            setupScrollSpacer() {
+                const spacer = document.createElement('div');
+                spacer.style.width = this.virtualWidth + 'px';
+                spacer.style.height = this.virtualHeight + 'px';
+                this.scrollContainer.appendChild(spacer);
+            }
+
+            attachEvents() {
+                window.addEventListener('resize', () => this.resizeCanvas());
+
+                let needsRender = false;
+                this.scrollContainer.addEventListener('scroll', () => {
+                    if (!needsRender) {
+                        needsRender = true;
+                        requestAnimationFrame(() => {
+                            this.render();
+                            needsRender = false;
+                        });
+                    }
+                });
+            }
+
+            resizeCanvas() {
+                this.canvas.width = this.scrollContainer.clientWidth;
+                this.canvas.height = this.scrollContainer.clientHeight;
+                this.render();
+            }
+
+            render() {
+                const scrollX = this.scrollContainer.scrollLeft;
+                const scrollY = this.scrollContainer.scrollTop;
+
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.font = '12px sans-serif';
+
+                const startCol = Math.floor(scrollX / this.cellWidth);
+                const endCol = startCol + Math.ceil(this.canvas.width / this.cellWidth);
+
+                const startRow = Math.floor(scrollY / this.cellHeight);
+                const endRow = startRow + Math.ceil(this.canvas.height / this.cellHeight);
+
+                for (let rowIndex = startRow; rowIndex <= endRow; rowIndex++) {
+                    const row = this.rows[rowIndex];
+                    for (let colIndex = startCol; colIndex <= endCol; colIndex++) {
+                        const col = this.columns[colIndex];
+
+                        const x = colIndex * this.cellWidth - scrollX;
+                        const y = rowIndex * this.cellHeight - scrollY;
+
+                        const cell = new Cell(row, col);
+                        cell.draw(this.ctx, x, y, this.cellWidth, this.cellHeight);
+                    }
+                }
+            }
+        }
+
+        // Initialize
+        const canvas = document.getElementById('excelCanvas');
+        const scrollContainer = document.getElementById('scrollContainer');
+
+        const grid = new Grid(canvas, scrollContainer);
+    </script>
+
+</body>
+
+</html>
