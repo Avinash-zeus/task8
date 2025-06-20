@@ -100,7 +100,9 @@
             }
         });
 
-        window.addEventListener('resize', resizeCanvas);
+        // window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('resize', () => this.resizeCanvas());
+
 
         // Initial setup
         resizeCanvas();
